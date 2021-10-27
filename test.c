@@ -1,1 +1,0 @@
-//anak na kikinig ka ba?
