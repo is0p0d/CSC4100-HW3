@@ -11,6 +11,7 @@
 .global k_print
 .global k_scroll
 .global k_clearscr
+.global kbd_enter
 # .global k_sqr_root
 
 # i shall rip this rock from its peaceful home
@@ -125,3 +126,13 @@ k_clearscr:
     # was going to use the x87 floating point co processor to
     # calculate the minimum number to check for primality
     # but decided 20 primes wasnt worth it
+
+kbd_enter:
+    cli
+    pushad
+    pushf
+    in al, 0x64 # Read keyboard controller signal
+    and al, 0x01
+    jz _kbd_skip
+    in al, 0x60 # Read the keyboard's scancode
+    

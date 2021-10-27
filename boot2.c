@@ -12,7 +12,7 @@ void k_clearscr();
 void k_print(char *string, int str_length, int row, int col);
 void k_scroll();
 //New to v2.0
-void kdb_enter();
+void kbd_enter();
 
 //Functions written in C
 int primeTest(int p);
