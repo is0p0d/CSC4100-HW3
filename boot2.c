@@ -32,7 +32,7 @@ int main()
     int possiblePrime = 3;
     int numOfPrimes = 0;
     char* numBuffer;
-    println("JimOS 1.0a");
+    println("JimOS 2.0a");
     println(" ");
     println("Primes:");
     println("-----------");

@@ -12,6 +12,10 @@
 .global k_scroll
 .global k_clearscr
 .global kbd_enter
+
+foundKey .asciz "Found key: "
+
+extern println
 # .global k_sqr_root
 
 # i shall rip this rock from its peaceful home
@@ -135,4 +139,10 @@ kbd_enter:
     and al, 0x01
     jz _kbd_skip
     in al, 0x60 # Read the keyboard's scancode
-    
+    push foundKey
+    call println
+    pop
+    push al
+    call convert_num
+
+
