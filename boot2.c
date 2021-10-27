@@ -1,24 +1,27 @@
 /**************************************
  *Jim Moroney              10.27.2021 *
- *boot2.c                             *
+ *boot2.c                        v2.0 *
  *HW2                         CSC4100 *
  **************************************/
 
 #define MAX_COL 80 //i dont like magic numbers
 #define MAX_ROW 24 //and global variables are yucky
 
-
-//Functions to be written
-
 //Functions written in asm
 void k_clearscr();
 void k_print(char *string, int str_length, int row, int col);
 void k_scroll();
+//New to v2.0
+void kdb_enter();
+
 //Functions written in C
 int primeTest(int p);
 void println(char *string);
 int convert_num_h(unsigned int num, char buf[]);
 void convert_num(unsigned int num, char buf[]);
+//New to v2.0
+char k_getchar();
+void kbd_handler();
 
 int row = 0; // could use pointers to fix this.
 
