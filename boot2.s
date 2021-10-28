@@ -12,6 +12,8 @@
 .global k_scroll
 .global k_clearscr
 .global kbd_enter
+.global lidtr
+.global outportb
 
 foundKey: .asciz "Found key: "
 numBuffer: .asciz "#####"
@@ -157,4 +159,33 @@ _kbd_skip:
     popad
     iret
 
+lidtr:
+    push ebp
+    mov ebp, esp
+    pushf
+    push eax
 
+    mov eax, [esp+8]
+    lidt [eax]
+
+    pop eax
+    popf
+    pop ebp
+    ret
+
+outportb:
+    push ebp
+    mov ebp, esp
+    pushf
+    push al
+    push dx
+
+    mov dx [esp+8]
+    mov al [esp+12]
+    out dx, al
+
+    pop dx
+    pop al
+    popf
+    pop ebp
+    ret

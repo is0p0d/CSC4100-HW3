@@ -4,6 +4,9 @@
  *HW2                         CSC4100 *
  **************************************/
 
+#include "idt_def.h"
+#include "kbd_def.h"
+
 #define MAX_COL 80 //i dont like magic numbers
 #define MAX_ROW 24 //and global variables are yucky
 
@@ -28,38 +31,15 @@ int row = 0; // could use pointers to fix this.
 int main()
 {
     k_clearscr();
-    int maxPrimes = 30;
-    int possiblePrime = 3;
-    int numOfPrimes = 0;
-    char* numBuffer;
     println("JimOS 2.0a");
     println(" ");
-    println("Primes:");
-    println("-----------");
 
-    while (numOfPrimes <= maxPrimes)
-    {
-        if(primeTest(possiblePrime) == 1)
-        {
-            convert_num(possiblePrime, numBuffer);
-            println(numBuffer);
-            numOfPrimes++;
-        }
-        possiblePrime++;
-    }
+    initIDT();
+    setupPIC();
 
+    __asm__("sti");
 
     while(1);
-}
-//Absolutely naive prime finding algorithm.
-int primeTest(int p)
-{
-    for (int i = 2; i <= p/2; i++)
-    {
-        if(p%i == 0)
-        return 0;
-    }
-    return 1;
 }
 
 void println(char *string)

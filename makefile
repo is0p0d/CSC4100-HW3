@@ -18,14 +18,20 @@ boot1: boot1.asm boot2.exe
 boot2: boot2.exe
 	objcopy -j .text* -j .data* -j .rodata* -S -O binary boot2.exe boot2
 
-boot2.exe: boot2_s.o boot2_c.o
-	ld -g -melf_i386 -Ttext 0x10000 -e main -o boot2.exe boot2_s.o boot2_c.o
+boot2.exe: boot2_s.o boot2_c.o kbd_def.o idt_def.o
+	ld -g -melf_i386 -Ttext 0x10000 -e main -o boot2.exe boot2_s.o boot2_c.o kbd_def.o idt_def.o
 
 boot2_s.o: boot2.s 
 	gcc -g -m32 -c -masm=intel -o boot2_s.o boot2.s
 
 boot2_c.o: boot2.c
 	gcc -g -m32 -c -o boot2_c.o boot2.c
+
+kbd_def.o: kbd_def.c kbd_def.h idt_def.o
+	gcc -g -m32 -c -o kbd_def.o kbd_def.c
+
+idt_def.o: idt_def.c idt_def.h
+	gcc -g -m32 -c -o idt_def.o idt_def.c
 
 clean:
 	rm *.o
