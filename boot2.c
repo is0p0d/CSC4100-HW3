@@ -36,7 +36,7 @@ void k_clearscr();
 void k_print(char *string, int str_length, int row, int col);
 void k_scroll();
 //new to v2.0
-void lidtr(idt_ptr idtr);
+void lidtr(idt_ptr *idtr);
 void outportb(uint16 port, uint8 data);
 void kbd_enter();
 void sti_enable();
@@ -145,17 +145,17 @@ void initIDT()
     for (int i = 0; i < 256; i++)
     {
         if (i < 32)
-            initIDTEntry(&idt[i], (uint32)default_exception, 0x10, 0x8e);
+            initIDTEntry(&idt[i], (uint32)&default_exception, 0x10, 0x8e);
         else if (i == 32)
             initIDTEntry(&idt[i], 0, 0x10, 0x8e);
         else if (i == 33)
-            initIDTEntry(&idt[i], (uint32)kbd_enter, 0x10, 0x8e);
+            initIDTEntry(&idt[i], (uint32)&kbd_enter, 0x10, 0x8e);
         else    
             initIDTEntry(&idt[i], 0, 0x10, 0x8e);
     }
 
     limitStruct.limit = (sizeof(idt_entry) * 256) - 1;
-    limitStruct.base = (uint32)idt;
+    limitStruct.base = (uint32)&idt;
 
     lidtr(&limitStruct);
 }
