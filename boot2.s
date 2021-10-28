@@ -13,7 +13,8 @@
 .global k_clearscr
 .global kbd_enter
 
-foundKey .asciz "Found key: "
+foundKey: .asciz "Found key: "
+numBuffer: .asciz "#####"
 
 extern println
 # .global k_sqr_root
@@ -139,10 +140,21 @@ kbd_enter:
     and al, 0x01
     jz _kbd_skip
     in al, 0x60 # Read the keyboard's scancode
-    push foundKey
+
+    push OFFSET foundKey
     call println
-    pop
+    add esp, 4
+
+    push OFFSET numBuffer
     push al
     call convert_num
+    add esp, 8
+
+_kbd_skip:
+    mov al, 0x20
+    out 0x20, al
+    popf
+    popad
+    iret
 
 
