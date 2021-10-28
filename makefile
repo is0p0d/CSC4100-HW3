@@ -1,6 +1,6 @@
 debug: install
 	mv ./a.img ./a.raw
-	qemu-system-i386 -S -s -boot a -fda a.raw
+	qemu-system-i386 -S -s -no-reboot -boot a -fda a.raw
 
 run: install
 	mv ./a.img ./a.raw

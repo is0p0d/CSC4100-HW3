@@ -12,12 +12,12 @@
 .global k_scroll
 .global k_clearscr
 .global kbd_enter
-.global lidtr
+# .global lidtr
 # .global outportb
-.global sti_enable
+# .global sti_enable
 
-foundKey: .asciz "Found key: "
-numBuffer: .asciz "#####"
+foundKey:   .asciz "Found key: "
+numBuffer:  .asciz "------"
 
 # .global k_sqr_root
 
@@ -138,10 +138,10 @@ kbd_enter:
     cli
     pushad
     pushf
-    in al, 0x64 # Read keyboard controller signal
+    in al, 0x64         # Read keyboard controller signal
     and al, 0x01
     jz _kbd_skip
-    in al, 0x60 # Read the keyboard's scancode
+    in al, 0x60         # Read the keyboard's scancode
 
     push OFFSET foundKey
     call println
@@ -150,7 +150,9 @@ kbd_enter:
     push OFFSET numBuffer
     push eax
     call convert_num
-    add esp, 8
+    add esp, 4
+    call println
+    add esp, 4
 
 _kbd_skip:
     mov al, 0x20
@@ -159,19 +161,21 @@ _kbd_skip:
     popad
     iret
 
-lidtr:
-    push ebp
-    mov ebp, esp
-    pushf
-    push eax
+# Functions of the broken and damned
 
-    mov eax, [esp+8]
-    lidt [eax]
+# lidtr:
+ #   push ebp
+ #   mov ebp, esp
+ #   pushf
+ #   push eax
 
-    pop eax
-    popf
-    pop ebp
-    ret
+ #   mov eax, [esp+8]
+ #   lidt [eax]
+
+ #   pop eax
+ #   popf
+ #   pop ebp
+ #   ret
 
 # outportb:
  #   push ebp
@@ -190,6 +194,6 @@ lidtr:
  #   pop ebp
  #   ret
 
- sti_enable:
-    sti
-    ret
+# sti_enable:
+ #  sti
+ #  ret

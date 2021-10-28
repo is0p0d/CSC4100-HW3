@@ -36,15 +36,15 @@ void k_clearscr();
 void k_print(char *string, int str_length, int row, int col);
 void k_scroll();
 //new to v2.0
-void lidtr(idt_ptr *idtr);
+//void lidtr(idt_ptr *idtr);
 void outportb(uint16 port, uint8 data);
 void kbd_enter();
-void sti_enable();
+//void sti_enable();
 
 //Functions written in C
-int primeTest(int p);
+int  primeTest(int p);
 void println(char *string);
-int convert_num_h(unsigned int num, char buf[]);
+int  convert_num_h(unsigned int num, char buf[]);
 void convert_num(unsigned int num, char buf[]);
 //New to v2.0
 char k_getchar();
@@ -67,8 +67,9 @@ int main()
     println(" ");
     println("Initializing...");
     initIDT();
-    setupPIC();
-    sti_enable();
+    //setupPIC();
+    //sti_enable();
+    asm volatile ("sti");
     println("Done!");
     println("Start typing:");
 
@@ -104,7 +105,7 @@ void println(char *string)
     }
 }
 
-int convert_num_h(unsigned int num, char buf[]) 
+int convert_num_h(uint32 num, char buf[]) 
 {
     if (num == 0)
         return 0;
@@ -115,7 +116,7 @@ int convert_num_h(unsigned int num, char buf[])
     return idx + 1;
 }
 
-void convert_num(unsigned int num, char buf[])
+void convert_num(uint32 num, char buf[])
 {
     if (num == 0)
     {
@@ -154,10 +155,14 @@ void initIDT()
             initIDTEntry(&idt[i], 0, 0x10, 0x8e);
     }
 
+    setupPIC();
+
     limitStruct.limit = (sizeof(idt_entry) * 256) - 1;
     limitStruct.base = (uint32)&idt;
 
-    lidtr(&limitStruct);
+    asm volatile ("lidt (%0)" : : "r" (&limitStruct));
+
+    //lidtr(&limitStruct);
 }
 
 //was easier to understand this in-line for some reason, was having trouble
