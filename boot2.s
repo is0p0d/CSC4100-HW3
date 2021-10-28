@@ -13,12 +13,12 @@
 .global k_clearscr
 .global kbd_enter
 .global lidtr
-.global outportb
+# .global outportb
+.global sti_enable
 
 foundKey: .asciz "Found key: "
 numBuffer: .asciz "#####"
 
-extern println
 # .global k_sqr_root
 
 # i shall rip this rock from its peaceful home
@@ -148,7 +148,7 @@ kbd_enter:
     add esp, 4
 
     push OFFSET numBuffer
-    push al
+    push eax
     call convert_num
     add esp, 8
 
@@ -173,19 +173,23 @@ lidtr:
     pop ebp
     ret
 
-outportb:
-    push ebp
-    mov ebp, esp
-    pushf
-    push al
-    push dx
+# outportb:
+ #   push ebp
+ #   mov ebp, esp
+ #   pushf
+ #   push ax
+ #   push dx
 
-    mov dx [esp+8]
-    mov al [esp+12]
-    out dx, al
+ #   mov dx, [esp+8]
+ #   mov ax, [esp+12]
+ #   out dx, al
 
-    pop dx
-    pop al
-    popf
-    pop ebp
+ #   pop dx
+ #   pop ax
+ #   popf
+ #   pop ebp
+ #   ret
+
+ sti_enable:
+    sti
     ret
