@@ -25,7 +25,7 @@ boot2_s.o: boot2.s
 	gcc -g -m32 -c -masm=intel -o boot2_s.o boot2.s
 
 boot2_c.o: boot2.c
-	gcc -g -m32 -c -o boot2_c.o boot2.c
+	gcc -g -m32 -fno-stack-protector -c -o boot2_c.o boot2.c
 
 clean:
 	rm *.o

@@ -10,7 +10,7 @@ typedef unsigned char   uint8;  //to set up an idt entry
 
 #define MAX_COL 80 //i dont like magic numbers
 #define MAX_ROW 24 //and global variables are yucky
-#define MAX_BUF 128
+#define MAX_BUF 64
 
 enum CSET_1 {
   Q_PRESSED = 0x10, W_PRESSED = 0x11, E_PRESSED = 0x12, R_PRESSED = 0x13,
@@ -88,7 +88,6 @@ void kbd_enter();
 //void sti_enable();
 
 //Functions written in C
-int  primeTest(int p);
 void println(char *string);
 int  convert_num_h(unsigned int num, char buf[]);
 void convert_num(unsigned int num, char buf[]);
@@ -100,10 +99,11 @@ void initIDT();
 void setupPIC();
 void kbd_handler(uint32 scancode);
 char translate_scancode(int code);
+void splashScreen();
 
 //buffer functions
 
-void ring_buff_init(ring_buffer* passedStruct, char passedBuff, uint8 buffLength);
+void ring_buff_init(ring_buffer* passedStruct, char* passedBuff, uint8 buffLength);
 void ring_buff_push(ring_buffer* buff, char data);
 void ring_buff_pop(ring_buffer* buff, char* data);
 uint8 ring_buff_isfull(ring_buffer* buff);
@@ -111,6 +111,7 @@ uint8 ring_buff_isfull(ring_buffer* buff);
 
 //global variables
 int row = 0; // could use pointers to fix this.
+int col = 0;
 idt_entry idt[256];
 idt_ptr limitStruct;
 ring_buffer kbd_buffer;
@@ -119,8 +120,10 @@ char charBuffer[MAX_BUF];
 
 int main()
 {
+    char ch = '0';
     k_clearscr();
-    println("JimOS 2.0a");
+    splashScreen();
+    println("Jim M 2021");
     println(" ");
     println("Initializing...");
     initIDT();
@@ -132,7 +135,33 @@ int main()
     println("Start typing:");
 
 
-    while(1);
+    while(1)
+    {
+        ch = k_getchar();
+        if (ch != 0)
+        {
+            if (ch == '\n')
+            {
+                row++;
+                col = 0;
+            }
+            else
+            {
+                k_print(&ch, 1, row, col);
+                col++;
+                if (col > MAX_COL)
+                {
+                    row++;
+                    if (row > MAX_ROW)
+                    {
+                        k_scroll();
+                        row = MAX_ROW;
+                    }
+                    col = 0;
+                }
+            }
+        }
+    }
 }
 
 void println(char *string)
@@ -251,7 +280,7 @@ void setupPIC()
     outportb(0xA1, 0xff); // Turn off all others
 }
 
-void ring_buff_init(ring_buffer* passedStruct, char passedBuff, uint8 buffLength)
+void ring_buff_init(ring_buffer* passedStruct, char* passedBuff, uint8 buffLength)
 {
     passedStruct->buffer = passedBuff;
     passedStruct->first = 0;
@@ -291,9 +320,11 @@ void ring_buff_pop(ring_buffer* buff, char* data)
 
 uint8 ring_buff_isfull(ring_buffer* buff)
 {
-    if((buff->first)+1 == buff->last)
+    if((buff->first)+1 == buff->last) // buff is full
         return 1;
-    else
+    else if (buff->first == buff->last) // buff is empty
+        return 2;
+    else // buff has stuff in it
         return 0;
 }
 
@@ -311,20 +342,64 @@ char translate_scancode(int code)
     {
         switch(code)
         {
-            case 0x0B: return '0';
-            case 0x1C: return '\n';
-            case 0x39: return ' ';
-            case 0xE:  return '\n';
-            case 0x34: return '.';
-            case 0x35: return '/';
-            default: println("!!Character not supported.");
+            case 0x0B: 
+                return '0';
+                break;
+            case 0x1C: 
+                return '\n';
+                break;
+            case 0x39: 
+                return ' ';
+                break;
+            case 0xE:  
+                return '\n';
+                break;
+            case 0x34: 
+                return '.';
+                break;
+            case 0x35: 
+                return '/';
+                break;
+            default: 
+                println("!!Character not supported.");
         }
     }
 }
 
 void kbd_handler(uint32 scancode)
 {
-    if(scancode == 0 || ring_buff_isfull(&kbd_buffer) == 1)
+    if (scancode < 0x2 || scancode > 0x80)
+        return;
+    else if(scancode == 0 || ring_buff_isfull(&kbd_buffer) == 1)
         return;
     ring_buff_push(&kbd_buffer, translate_scancode(scancode));
+}
+
+char k_getchar()
+{
+    char temp;
+    if(ring_buff_isfull(&kbd_buffer) == 2)
+        return 0;
+    else
+    {
+        ring_buff_pop(&kbd_buffer, &temp);
+        return temp;
+    }
+}
+
+void splashScreen()
+{
+    println("       .-.,     ,.-.");
+    println(" '-.  /:::\\\\   //:::\\  .-'");
+    println(" '-.\\|':':' `\"` ':':'|/.-\'");
+    println(" `-./`. .-=-. .-=-. .`\\.-`");
+    println("   /=- /     |     \\ -=\\");
+    println("  ;   |      |      |   ;");
+    println("  |=-.|______|______|.-=|");
+    println("  |==  \\  0 /_\\ 0  /  ==|");
+    println("  |=   /'---( )---'\\   =|");
+    println("   \\   \\:   .'.   :/   /");
+    println("    `\\= '--`   `--' =/'");
+    println("GARF  `-=._     _.=-'");
+    println("OS v2.0    `\"\"\"`");
 }
