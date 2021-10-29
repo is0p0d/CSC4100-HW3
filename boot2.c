@@ -10,6 +10,42 @@ typedef unsigned char   uint8;  //to set up an idt entry
 
 #define MAX_COL 80 //i dont like magic numbers
 #define MAX_ROW 24 //and global variables are yucky
+#define MAX_BUF 128
+
+enum CSET_1 {
+  Q_PRESSED = 0x10, W_PRESSED = 0x11, E_PRESSED = 0x12, R_PRESSED = 0x13,
+  T_PRESSED = 0x14, Y_PRESSED = 0x15, U_PRESSED = 0x16, I_PRESSED = 0x17,
+  O_PRESSED = 0x18, P_PRESSED = 0x19
+};
+static char* cset_1_chars = "qwertyuiop";
+
+enum CSET_2 {
+  A_PRESSED = 0x1E, S_PRESSED = 0x1F, D_PRESSED = 0x20, F_PRESSED = 0x21,
+  G_PRESSED = 0x22, H_PRESSED = 0x23, J_PRESSED = 0x24, K_PRESSED = 0x25,
+  L_PRESSED = 0x26
+};
+static char *cset_2_chars = "asdfghjkl";
+
+enum CSET_3 {
+  Z_PRESSED = 0x2C, X_PRESSED = 0x2D, C_PRESSED = 0x2E, V_PRESSED = 0x2F,
+  B_PRESSED = 0x30, N_PRESSED = 0x31, M_PRESSED = 0x32,
+};
+static char *cset_3_chars = "zxcvbnm";
+
+enum CSET_NUMBERS {
+  ONE_PRESSED = 0x2, TWO_PRESSED = 0x3, THREE_PRESSED = 0x4,
+  FOUR_PRESSED = 0x5, FIVE_PRESSED = 0x6, SIX_PRESSED = 0x7,
+  SEVEN_PRESSED = 0x8, EIGHT_PRESSED = 0x9, NINE_PRESSED = 0xA
+};
+static char *cset_num_chars = "123456789";
+
+#define CSET_ZERO 0x0B
+
+#define CSET_NL 0x1C
+#define CSET_SPC 0x39
+#define CSET_RET 0xE
+#define CSET_POINT_PRESSED 0x34
+#define CSET_SLASH_PRESSED 0x35
 
 
 struct idt_entry_struct
@@ -30,6 +66,16 @@ struct idt_ptr_struct
     uint32 base;
 }__attribute__((packed));
 typedef struct idt_ptr_struct idt_ptr;
+
+struct ring_buffer_struct
+{
+    char* buffer;
+    uint8 first;
+    uint8 last;
+    uint8 buffMax;
+
+}__attribute__((packed));
+typedef struct ring_buffer_struct ring_buffer;
 
 //Functions written in asm
 void k_clearscr();
@@ -53,11 +99,22 @@ void initIDTEntry(idt_entry *entry, uint32 base, uint16 selector, uint8 access);
 void initIDT();
 void setupPIC();
 void kbd_handler(uint32 scancode);
+char translate_scancode(int code);
+
+//buffer functions
+
+void ring_buff_init(ring_buffer* passedStruct, char passedBuff, uint8 buffLength);
+void ring_buff_push(ring_buffer* buff, char data);
+void ring_buff_pop(ring_buffer* buff, char* data);
+uint8 ring_buff_isfull(ring_buffer* buff);
+
 
 //global variables
 int row = 0; // could use pointers to fix this.
 idt_entry idt[256];
 idt_ptr limitStruct;
+ring_buffer kbd_buffer;
+char charBuffer[MAX_BUF];
 
 
 int main()
@@ -67,6 +124,7 @@ int main()
     println(" ");
     println("Initializing...");
     initIDT();
+    ring_buff_init(&kbd_buffer, charBuffer, MAX_BUF);
     //setupPIC();
     //sti_enable();
     asm volatile ("sti");
@@ -191,4 +249,82 @@ void setupPIC()
     // Now, enable the keyboard IRQ only 
     outportb(0x21, 0xfd); // Turn on the keyboard IRQ
     outportb(0xA1, 0xff); // Turn off all others
+}
+
+void ring_buff_init(ring_buffer* passedStruct, char passedBuff, uint8 buffLength)
+{
+    passedStruct->buffer = passedBuff;
+    passedStruct->first = 0;
+    passedStruct->last = 0;
+    passedStruct->buffMax = buffLength;
+}
+void ring_buff_push(ring_buffer* buff, char data)
+{
+    uint8 writeNext;
+    writeNext = buff->first + 1; //where to point after writing
+    //position logic
+    if (writeNext >= buff->buffMax)
+        writeNext = 0;
+    if (writeNext == buff->last) //if buffer is full, overwrite the next position
+        buff->last++;
+    buff->buffer[buff->first] = data; //Write data to beginning of buffer
+    buff->first = writeNext;
+}
+
+void ring_buff_pop(ring_buffer* buff, char* data)
+{
+    uint8 readNext;
+
+    if (buff->first == buff->last) //buffer is empty if this is true
+    {
+        return;
+        println("!!ERROR: ring buffer EMPTY");
+    }
+
+    readNext = buff->last + 1; //where to point after reading
+    if(readNext >= buff->buffMax)
+        readNext = 0;
+    
+    *data = buff->buffer[buff->last]; //read data
+    buff->last = readNext; //move to next offset
+}
+
+uint8 ring_buff_isfull(ring_buffer* buff)
+{
+    if((buff->first)+1 == buff->last)
+        return 1;
+    else
+        return 0;
+}
+
+char translate_scancode(int code)
+{
+    if(code >= 0x2 && code <= 0xA)
+        return cset_num_chars[code - 0x2];
+    else if(code >= 0x10 && code <= 0x19)
+        return cset_1_chars[code - 0x10];
+    else if(code >= 0x1E && code <= 0x26)
+        return cset_2_chars[code - 0x1E];
+    else if(code >= 0x2C && code <= 0x32)
+        return cset_3_chars[code - 0x2C];
+    else
+    {
+        switch(code)
+        {
+            case 0x0B: return '0';
+            case 0x1C: return '\n';
+            case 0x39: return ' ';
+            case 0xE:  return '\n';
+            case 0x34: return '.';
+            case 0x35: return '/';
+            default: println("!!Character not supported.");
+        }
+    }
+}
+
+void kbd_handler(uint32 scancode)
+{
+    if(scancode == 0 || ring_buff_isfull(&kbd_buffer) == 1)
+        return;
+    ring_buff_push(&kbd_buffer, translate_scancode(scancode));
 }

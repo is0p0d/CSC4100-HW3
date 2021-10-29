@@ -16,8 +16,8 @@
 # .global outportb
 # .global sti_enable
 
-foundKey:   .asciz "Found key: "
-numBuffer:  .asciz "------"
+# foundKey:   .asciz "Found key: "
+# numBuffer:  .asciz "------"
 
 # .global k_sqr_root
 
@@ -143,16 +143,19 @@ kbd_enter:
     jz _kbd_skip
     in al, 0x60         # Read the keyboard's scancode
 
-    push OFFSET foundKey
-    call println
-    add esp, 4
-
-    push OFFSET numBuffer
     push eax
-    call convert_num
+    call kbd_handler
     add esp, 4
-    call println
-    add esp, 4
+#    push OFFSET foundKey
+#    call println
+#    add esp, 4
+
+#    push OFFSET numBuffer
+#    push eax
+#    call convert_num
+#    add esp, 4
+#    call println
+#    add esp, 4
 
 _kbd_skip:
     mov al, 0x20
