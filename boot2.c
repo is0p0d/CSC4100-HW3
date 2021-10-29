@@ -47,7 +47,8 @@ static char *cset_num_chars = "123456789";
 #define CSET_POINT_PRESSED 0x34
 #define CSET_SLASH_PRESSED 0x35
 
-
+//idt structs
+//===========================================================================
 struct idt_entry_struct
 {
     uint16 base_low16;
@@ -67,6 +68,18 @@ struct idt_ptr_struct
 }__attribute__((packed));
 typedef struct idt_ptr_struct idt_ptr;
 
+
+//idt function prototypes
+//===========================================================================
+void default_exception();
+void initIDTEntry(idt_entry *entry, uint32 base, uint16 selector, uint8 access);
+void initIDT();
+void outportb(uint16 port, uint8 data);
+void setupPIC();
+
+
+//buffer structs
+//===========================================================================
 struct ring_buffer_struct
 {
     char* buffer;
@@ -77,39 +90,34 @@ struct ring_buffer_struct
 }__attribute__((packed));
 typedef struct ring_buffer_struct ring_buffer;
 
-//Functions written in asm
-void k_clearscr();
-void k_print(char *string, int str_length, int row, int col);
-void k_scroll();
-//new to v2.0
-//void lidtr(idt_ptr *idtr);
-void outportb(uint16 port, uint8 data);
-void kbd_enter();
-//void sti_enable();
 
-//Functions written in C
-void println(char *string);
-int  convert_num_h(unsigned int num, char buf[]);
-void convert_num(unsigned int num, char buf[]);
-//New to v2.0
-char k_getchar();
-void default_exception();
-void initIDTEntry(idt_entry *entry, uint32 base, uint16 selector, uint8 access);
-void initIDT();
-void setupPIC();
-void kbd_handler(uint32 scancode);
-char translate_scancode(int code);
-void splashScreen();
-
-//buffer functions
-
+//buffer function prototypes
+//===========================================================================
 void ring_buff_init(ring_buffer* passedStruct, char* passedBuff, uint8 buffLength);
 void ring_buff_push(ring_buffer* buff, char data);
 void ring_buff_pop(ring_buffer* buff, char* data);
 uint8 ring_buff_isfull(ring_buffer* buff);
 
+//keyboard function prototypes
+//===========================================================================
+void kbd_enter();                                               //asm boot2.s
+void kbd_handler(uint16 scancode);
+char translate_scancode(int code);
+char k_getchar();
+
+//Utility function prototypes
+//===========================================================================
+void k_clearscr();                                              //asm boot2.s
+void k_print(char *string, int str_length, int row, int col);   //asm boot2.s
+void k_scroll();                                                //asm boot2.s
+void println(char *string);
+int  convert_num_h(unsigned int num, char buf[]);
+void convert_num(unsigned int num, char buf[]);
+void splashScreen();
+
 
 //global variables
+//===========================================================================
 int row = 0; // could use pointers to fix this.
 int col = 0;
 idt_entry idt[256];
@@ -124,14 +132,15 @@ int main()
     k_clearscr();
     splashScreen();
     println("Jim M 2021");
-    println(" ");
-    println("Initializing...");
+    println("==============================");
+    println("!!Initializing...");
     initIDT();
     ring_buff_init(&kbd_buffer, charBuffer, MAX_BUF);
     //setupPIC();
     //sti_enable();
     asm volatile ("sti");
-    println("Done!");
+    println("!!Done...");
+    println("==============================");
     println("Start typing:");
 
 
@@ -143,6 +152,11 @@ int main()
             if (ch == '\n')
             {
                 row++;
+                    if (row > MAX_ROW)
+                    {
+                        k_scroll();
+                        row = MAX_ROW;
+                    }
                 col = 0;
             }
             else
@@ -164,61 +178,12 @@ int main()
     }
 }
 
-void println(char *string)
-{
-    int num_to_print = 0;
-
-    while (*(string+num_to_print) != '\0')
-        num_to_print++;
-
-    while (num_to_print != 0)
-    {
-        if (num_to_print < MAX_COL)
-        {
-            k_print(string, num_to_print, row, 0);
-            num_to_print = 0;
-        }
-        else
-        {
-            k_print(string, MAX_COL, row, 0);
-            num_to_print -= MAX_COL;
-        }
-        row++;
-        if (row > MAX_ROW)
-        {
-            k_scroll();
-            row = MAX_ROW;
-        }
-    }
-}
-
-int convert_num_h(uint32 num, char buf[]) 
-{
-    if (num == 0)
-        return 0;
-
-    int idx = convert_num_h((num / 10), buf);
-    buf[idx] = num % 10 + '0';
-    buf[idx+1] = '\0';
-    return idx + 1;
-}
-
-void convert_num(uint32 num, char buf[])
-{
-    if (num == 0)
-    {
-        buf[0] = '0';
-        buf[1] = '\0';
-    }
-    else
-        convert_num_h(num, buf);
-}
-
+//idt functions
+//===========================================================================
 void default_exception()
 {
     println("Exception!");
 }
-
 void initIDTEntry(idt_entry *entry, uint32 base, uint16 selector, uint8 access)
 {
     entry->base_low16 = (uint16)(base & 0xFFFF);
@@ -227,7 +192,6 @@ void initIDTEntry(idt_entry *entry, uint32 base, uint16 selector, uint8 access)
     entry->access = access;
     entry->selector = selector;
 }
-
 void initIDT()
 {
     for (int i = 0; i < 256; i++)
@@ -251,14 +215,10 @@ void initIDT()
 
     //lidtr(&limitStruct);
 }
-
-//was easier to understand this in-line for some reason, was having trouble
-//with moving stuff into small ports, will ask later.
 void outportb(uint16 port, uint8 data)
 {
     asm volatile ("outb %1, %0" : : "dN" (port), "a" (data));
 }
-
 void setupPIC()
 {
     // set up cascading mode:
@@ -280,6 +240,8 @@ void setupPIC()
     outportb(0xA1, 0xff); // Turn off all others
 }
 
+//buffer functions
+//===========================================================================
 void ring_buff_init(ring_buffer* passedStruct, char* passedBuff, uint8 buffLength)
 {
     passedStruct->buffer = passedBuff;
@@ -299,7 +261,6 @@ void ring_buff_push(ring_buffer* buff, char data)
     buff->buffer[buff->first] = data; //Write data to beginning of buffer
     buff->first = writeNext;
 }
-
 void ring_buff_pop(ring_buffer* buff, char* data)
 {
     uint8 readNext;
@@ -317,7 +278,6 @@ void ring_buff_pop(ring_buffer* buff, char* data)
     *data = buff->buffer[buff->last]; //read data
     buff->last = readNext; //move to next offset
 }
-
 uint8 ring_buff_isfull(ring_buffer* buff)
 {
     if((buff->first)+1 == buff->last) // buff is full
@@ -328,6 +288,16 @@ uint8 ring_buff_isfull(ring_buffer* buff)
         return 0;
 }
 
+//keyboard functions
+//===========================================================================
+void kbd_handler(uint16 scancode)
+{
+    if (scancode < 0x2 || scancode > 0x80)
+        return;
+    else if(scancode == 0 || ring_buff_isfull(&kbd_buffer) == 1)
+        return;
+    ring_buff_push(&kbd_buffer, translate_scancode(scancode));
+}
 char translate_scancode(int code)
 {
     if(code >= 0x2 && code <= 0xA)
@@ -361,20 +331,10 @@ char translate_scancode(int code)
                 return '/';
                 break;
             default: 
-                println("!!Character not supported.");
+                break;
         }
     }
 }
-
-void kbd_handler(uint32 scancode)
-{
-    if (scancode < 0x2 || scancode > 0x80)
-        return;
-    else if(scancode == 0 || ring_buff_isfull(&kbd_buffer) == 1)
-        return;
-    ring_buff_push(&kbd_buffer, translate_scancode(scancode));
-}
-
 char k_getchar()
 {
     char temp;
@@ -387,6 +347,55 @@ char k_getchar()
     }
 }
 
+//utility functions
+//===========================================================================
+void println(char *string)
+{
+    int num_to_print = 0;
+
+    while (*(string+num_to_print) != '\0')
+        num_to_print++;
+
+    while (num_to_print != 0)
+    {
+        if (num_to_print < MAX_COL)
+        {
+            k_print(string, num_to_print, row, 0);
+            num_to_print = 0;
+        }
+        else
+        {
+            k_print(string, MAX_COL, row, 0);
+            num_to_print -= MAX_COL;
+        }
+        row++;
+        if (row > MAX_ROW)
+        {
+            k_scroll();
+            row = MAX_ROW;
+        }
+    }
+}
+int convert_num_h(uint32 num, char buf[]) 
+{
+    if (num == 0)
+        return 0;
+
+    int idx = convert_num_h((num / 10), buf);
+    buf[idx] = num % 10 + '0';
+    buf[idx+1] = '\0';
+    return idx + 1;
+}
+void convert_num(uint32 num, char buf[])
+{
+    if (num == 0)
+    {
+        buf[0] = '0';
+        buf[1] = '\0';
+    }
+    else
+        convert_num_h(num, buf);
+}
 void splashScreen()
 {
     println("       .-.,     ,.-.");

@@ -143,6 +143,8 @@ kbd_enter:
     jz _kbd_skip
     in al, 0x60         # Read the keyboard's scancode
 
+    movzx eax, al
+
     push eax
     call kbd_handler
     add esp, 4
