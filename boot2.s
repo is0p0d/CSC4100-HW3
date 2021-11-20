@@ -12,6 +12,7 @@
 .global k_scroll
 .global k_clearscr
 .global kbd_enter
+.gloval create_process
 # .global lidtr
 # .global outportb
 # .global sti_enable

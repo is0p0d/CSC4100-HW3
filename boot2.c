@@ -105,6 +105,11 @@ void kbd_handler(uint16 scancode);
 char translate_scancode(int code);
 char k_getchar();
 
+//process function prototypes
+//===========================================================================
+int create_process(uint32 processEntry);
+
+
 //Utility function prototypes
 //===========================================================================
 void k_clearscr();                                              //asm boot2.s
@@ -118,7 +123,7 @@ void splashScreen();
 
 //global variables
 //===========================================================================
-int row = 0; // could use pointers to fix this.
+int row = 0;
 int col = 0;
 idt_entry idt[256];
 idt_ptr limitStruct;
@@ -141,9 +146,9 @@ int main()
     asm volatile ("sti");
     println("!!Done...");
     println("==============================");
+    
+/*
     println("Start typing:");
-
-
     while(1)
     {
         ch = k_getchar();
@@ -176,6 +181,7 @@ int main()
             }
         }
     }
+*/
 }
 
 //idt functions
@@ -236,7 +242,7 @@ void setupPIC()
     outportb(0x21, 0x0);
     outportb(0xA1, 0x0);
     // Now, enable the keyboard IRQ only 
-    outportb(0x21, 0xfd); // Turn on the keyboard IRQ
+    outportb(0x21, 0xfc); // Turn on the keyboard & timer IRQ
     outportb(0xA1, 0xff); // Turn off all others
 }
 
