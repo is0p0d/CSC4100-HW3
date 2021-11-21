@@ -9,6 +9,8 @@ typedef unsigned short  uint16; //confusing to see int short and char being used
 typedef unsigned char   uint8;  //to set up an idt entry
 
 #define NULL ((void* )0) //null ptr
+#define TRUE 1
+#define FALSE 0
 #define MAX_COL 80 //i dont like magic numbers
 #define MAX_ROW 24 //and global variables are yucky
 #define MAX_BUF 64
@@ -168,6 +170,7 @@ char charBuffer[MAX_BUF];
 
 PCB* currentPCB;
 pcb_queue readyQueue;
+pcb_qNode* nodePool[5];
 uint32 progStacks[5][1024];
 
 
@@ -453,7 +456,7 @@ void qNode_deQueue(pcb_qNode** nodePtr, pcb_queue* queuePtr)
 //===========================================================================
 int create_process(uint32 processEntry)
 {
-    
+
 }
 
 
