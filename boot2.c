@@ -8,6 +8,7 @@ typedef unsigned int    uint32; //setting these up because it would be
 typedef unsigned short  uint16; //confusing to see int short and char being used
 typedef unsigned char   uint8;  //to set up an idt entry
 
+#define NULL ((void* )0) //null ptr
 #define MAX_COL 80 //i dont like magic numbers
 #define MAX_ROW 24 //and global variables are yucky
 #define MAX_BUF 64
@@ -90,7 +91,6 @@ struct ring_buffer_struct
 }__attribute__((packed));
 typedef struct ring_buffer_struct ring_buffer;
 
-
 //buffer function prototypes
 //===========================================================================
 void ring_buff_init(ring_buffer* passedStruct, char* passedBuff, uint8 buffLength);
@@ -105,10 +105,43 @@ void kbd_handler(uint16 scancode);
 char translate_scancode(int code);
 char k_getchar();
 
-//process function prototypes
+//PCB structs
+//===========================================================================
+struct ProcessControlBlock_struct
+{
+    int* ESP;
+    int PID;
+}__attribute__((packed));
+typedef struct ProcessControlBlock_struct PCB;
+
+//PCB function prototypes
 //===========================================================================
 int create_process(uint32 processEntry);
 
+//queue structs
+//===========================================================================
+struct pcb_queue_node
+{
+    PCB* val;
+    pcb_qNode* next;
+}__attribute__((packed));
+typedef struct pcb_queue_node pcb_qNode;
+
+struct pcb_queue_list
+{
+    int count;
+    pcb_qNode* front;
+    pcb_qNode* rear;
+}__attribute__((packed));
+typedef struct pcb_queue_list pcb_queue;
+
+//queue function prototypes
+//===========================================================================
+void pcb_queue_init(pcb_queue* queuePtr);
+void qNode_enQueue(pcb_qNode* nodePtr, pcb_queue* queuePtr);
+void qNode_deQueue(pcb_qNode** nodePtr, pcb_queue* queuePtr);
+// void pcb_enQueue(PCB* pcbVal, pcb_queue* queuePtr);
+// PCB* pcb_deQueue(pcb_queue* queuePtr);
 
 //Utility function prototypes
 //===========================================================================
@@ -125,10 +158,19 @@ void splashScreen();
 //===========================================================================
 int row = 0;
 int col = 0;
+int num_processes = 0;
+int num_pid = 0;
+int num_stack = 0;
 idt_entry idt[256];
 idt_ptr limitStruct;
 ring_buffer kbd_buffer;
 char charBuffer[MAX_BUF];
+
+PCB* currentPCB;
+pcb_queue readyQueue;
+uint32 progStacks[5][1024];
+
+
 
 
 int main()
@@ -352,6 +394,68 @@ char k_getchar()
         return temp;
     }
 }
+
+//queue function prototypes
+//===========================================================================
+void pcb_queue_init(pcb_queue* queuePtr)
+{
+    queuePtr->count = 0;
+    queuePtr->front = NULL;
+    queuePtr->rear = NULL;
+}
+void qNode_enQueue(pcb_qNode* nodePtr, pcb_queue* queuePtr)
+{
+    if(nodePtr == NULL)
+    {
+        println("!!ERROR: Attempt to push a null node.");
+    }
+    else if (queuePtr->front == NULL)
+    {
+        queuePtr->front = nodePtr;
+        queuePtr->rear = nodePtr;
+    }
+    else
+    {
+        queuePtr->rear->next = nodePtr;
+        queuePtr->rear = nodePtr;
+    }
+}
+void qNode_deQueue(pcb_qNode** nodePtr, pcb_queue* queuePtr)
+{
+    if (queuePtr->front == NULL)
+    {
+        println("!!ERROR: Attmept to remove node from an empty queue.");
+    }
+    else
+    {
+        *nodePtr = queuePtr->front;
+        queuePtr->front = (*nodePtr)->next;
+        if (queuePtr->front = NULL)
+        {
+            queuePtr->rear = NULL;
+        }
+    }
+}
+// void pcb_enQueue(PCB* pcbVal, pcb_queue* queuePtr)
+// {
+//     pcb_qNode* queueNode;
+//     queueNode->val = pcbVal;
+//     queueNode->next = NULL;
+//     qNode_enQueue(queueNode, queuePtr);
+// }
+// PCB* pcb_deQueue(pcb_queue* queuePtr)
+// {
+//     pcb_qNode* queueNode;
+//     qNode_deQueue;
+// }
+
+//PCB function prototypes
+//===========================================================================
+int create_process(uint32 processEntry)
+{
+    
+}
+
 
 //utility functions
 //===========================================================================

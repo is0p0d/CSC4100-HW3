@@ -12,13 +12,9 @@
 .global k_scroll
 .global k_clearscr
 .global kbd_enter
-.gloval create_process
 # .global lidtr
 # .global outportb
 # .global sti_enable
-
-# foundKey:   .asciz "Found key: "
-# numBuffer:  .asciz "------"
 
 # .global k_sqr_root
 
@@ -149,16 +145,6 @@ kbd_enter:
     push eax
     call kbd_handler
     add esp, 4
-#    push OFFSET foundKey
-#    call println
-#    add esp, 4
-
-#    push OFFSET numBuffer
-#    push eax
-#    call convert_num
-#    add esp, 4
-#    call println
-#    add esp, 4
 
 _kbd_skip:
     mov al, 0x20
