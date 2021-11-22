@@ -157,6 +157,14 @@ int  convert_num_h(unsigned int num, char buf[]);
 void convert_num(unsigned int num, char buf[]);
 void splashScreen();
 
+//Processes
+//===========================================================================
+void p1();
+void p2();
+void p3();
+void p4();
+void p5();
+void pIdle();
 
 //global variables
 //===========================================================================
@@ -172,9 +180,10 @@ queue processQueue;
 PCB* currentPCB;
 PCB PCBpool[5];
 uint32 progStacks[5][1024];
-int num_processes = 0;
+int process_count = 0;
 int num_pid = 0;
 int num_stack = 0;
+int num_process = 5;
 
 int main()
 {
@@ -188,9 +197,17 @@ int main()
     ring_buff_init(&kbd_buffer, charBuffer, MAX_BUF);
     //setupPIC();
     //sti_enable();
-    asm volatile ("sti");
+    //asm volatile ("sti");
     println("!!Done...");
     println("==============================");
+    int retval = 0;
+    retval = create_process((uint32)&p1);
+    retval = create_process((uint32)&p1);
+    retval = create_process((uint32)&p1);
+    retval = create_process((uint32)&p1);
+    retval = create_process((uint32)&p1);
+
+    go();
     
 /*
     println("Start typing:");
@@ -264,6 +281,8 @@ void initIDT()
     limitStruct.base = (uint32)&idt;
 
     asm volatile ("lidt (%0)" : : "r" (&limitStruct));
+
+    return;
 
     //lidtr(&limitStruct);
 }
@@ -427,7 +446,7 @@ PCB* dequeue()
 //===========================================================================
 int create_process(uint32 processEntry)
 {
-    if (num_processes > 4 || num_stack > 4)
+    if (process_count > 4 || num_stack > 4)
         return 1; //error
     
     uint32* stackPtr = allocStack();
@@ -461,7 +480,7 @@ int create_process(uint32 processEntry)
     tempProcess->PID = num_pid;
 
     enqueue(tempProcess);
-    num_processes++;
+    process_count++;
 }
 uint32* allocStack()
 {
@@ -536,4 +555,66 @@ void splashScreen()
     println("    `\\= '--`   `--' =/'");
     println("GARF  `-=._     _.=-'");
     println("OS v2.0    `\"\"\"`");
+}
+
+//Process implementations
+//=============================================================================
+void p1()
+{
+    int i = 0;
+    char* procmsg;
+    while(1)
+    {
+        procmsg = "process p1: " + i;
+        k_print(procmsg, 32, 20, 0);
+        i = ((i+1)%500);
+    }
+}
+void p2()
+{
+    int i = 0;
+    char* procmsg;
+    while(1)
+    {
+        procmsg = "process p2: " + i;
+        k_print(procmsg, 32, 21, 0);
+        i = ((i+1)%500);
+    }
+}
+void p3()
+{
+    int i = 0;
+    char* procmsg;
+    while(1)
+    {
+        procmsg = "process p3: " + i;
+        k_print(procmsg, 32, 22, 0);
+        i = ((i+1)%500);
+    }
+}
+void p4()
+{
+    int i = 0;
+    char* procmsg;
+    while(1)
+    {
+        procmsg = "process p4: " + i;
+        k_print(procmsg, 32, 23, 0);
+        i = ((i+1)%500);
+    }
+}
+void p5()
+{
+    int i = 0;
+    char* procmsg;
+    while(1)
+    {
+        procmsg = "process p5: " + i;
+        k_print(procmsg, 32, 24, 0);
+        i = ((i+1)%500);
+    }
+}
+void pIdle()
+{
+    while(1);
 }

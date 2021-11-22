@@ -159,9 +159,11 @@ _kbd_skip:
     iret
 
 init_timer_dev:
-    pushf
-    pushad
+    push ebp
     mov ebp, esp
+    pushf
+    push edx
+    push eax
     mov edx, [ebp+8]
     imul edx, 1193
     movzx edx, dx
@@ -172,8 +174,11 @@ init_timer_dev:
     out 0x40, al
     xchg ah, al
     out 0x40, al
+    pop eax 
+    pop edx 
     popf
-    popad
+    pop ebp 
+    ret
 
 go:
     call dequeue
