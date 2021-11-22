@@ -442,7 +442,7 @@ int create_process(uint32 processEntry)
     *st = cs;
     st--;
     *st = processEntry;
-    for (i = 0; i < 8; i++)
+    for (int i = 0; i < 8; i++)
     {
         st--;
         *st = 0; 

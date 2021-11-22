@@ -176,9 +176,37 @@ init_timer_dev:
     popad
 
 go:
-    deq
+    call dequeue
+    mov esp, eax
+    pop gs
+    pop fs 
+    pop es 
+    pop ds 
+    popad
+    iret
 
 dispatch:
+    pushad
+    push ds
+    push es 
+    push fs 
+    push gs
+    mov edi, esp 
+    call enqueue
+
+    call dequeue
+    mov esp, eax
+    pop gs
+    pop fs 
+    pop es 
+    pop ds 
+    popad
+
+    push eax 
+    mov al, 0x20
+    out 0x20, al
+    pop eax
+    iret
 
 # Functions of the broken and damned
 
