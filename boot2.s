@@ -162,7 +162,7 @@ init_timer_dev:
     pushf
     pushad
     mov ebp, esp
-    push edx, [ebp+8]
+    mov edx, [ebp+8]
     imul edx, 1193
     movzx edx, dx
 
