@@ -12,6 +12,11 @@
 .global k_scroll
 .global k_clearscr
 .global kbd_enter
+.global init_timer_dev
+.global go
+.global dispatch
+.global dequeue
+.global enqueue
 # .global lidtr
 # .global outportb
 # .global sti_enable
@@ -152,6 +157,28 @@ _kbd_skip:
     popf
     popad
     iret
+
+init_timer_dev:
+    pushf
+    pushad
+    mov ebp, esp
+    push edx, [ebp+8]
+    imul edx, 1193
+    movzx edx, dx
+
+    mov al, 0b00110110
+    out 0x43, al
+    mov ax, dx
+    out 0x40, al
+    xchg ah, al
+    out 0x40, al
+    popf
+    popad
+
+go:
+    deq
+
+dispatch:
 
 # Functions of the broken and damned
 

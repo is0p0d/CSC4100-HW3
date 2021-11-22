@@ -14,7 +14,11 @@ typedef unsigned char   uint8;  //to set up an idt entry
 #define MAX_COL 80 //i dont like magic numbers
 #define MAX_ROW 24 //and global variables are yucky
 #define MAX_BUF 64
+#define MAX_QUE 5
 
+
+//character sets
+//===========================================================================
 enum CSET_1 {
   Q_PRESSED = 0x10, W_PRESSED = 0x11, E_PRESSED = 0x12, R_PRESSED = 0x13,
   T_PRESSED = 0x14, Y_PRESSED = 0x15, U_PRESSED = 0x16, I_PRESSED = 0x17,
@@ -119,32 +123,30 @@ typedef struct ProcessControlBlock_struct PCB;
 //PCB function prototypes
 //===========================================================================
 int create_process(uint32 processEntry);
+uint32* allocStack();
+PCB* allocPCB();
 
 //queue structs
 //===========================================================================
-struct pcb_queue_node
+struct queue_struct
 {
-    PCB* val;
-    pcb_qNode* next;
+    PCB* pcb_queue[MAX_QUE];
+    uint8 count;
+    uint8 head;
+    uint8 tail;
 }__attribute__((packed));
-typedef struct pcb_queue_node pcb_qNode;
-
-struct pcb_queue_list
-{
-    int count;
-    pcb_qNode* front;
-    pcb_qNode* rear;
-}__attribute__((packed));
-typedef struct pcb_queue_list pcb_queue;
+typedef struct queue_struct queue;
 
 //queue function prototypes
 //===========================================================================
-void pcb_queue_init(pcb_queue* queuePtr);
-void qNode_enQueue(pcb_qNode* nodePtr, pcb_queue* queuePtr);
-void qNode_deQueue(pcb_qNode** nodePtr, pcb_queue* queuePtr);
-// void pcb_enQueue(PCB* pcbVal, pcb_queue* queuePtr);
-// PCB* pcb_deQueue(pcb_queue* queuePtr);
+void enqueue(PCB* PCBptr);
+PCB* dequeue();
 
+//Timer functions
+//===========================================================================
+void init_timer_dev(uint32 timeDiv);
+void dispatch();
+void go();
 //Utility function prototypes
 //===========================================================================
 void k_clearscr();                                              //asm boot2.s
@@ -160,21 +162,19 @@ void splashScreen();
 //===========================================================================
 int row = 0;
 int col = 0;
-int num_processes = 0;
-int num_pid = 0;
-int num_stack = 0;
+
 idt_entry idt[256];
 idt_ptr limitStruct;
 ring_buffer kbd_buffer;
 char charBuffer[MAX_BUF];
 
+queue processQueue;
 PCB* currentPCB;
-pcb_queue readyQueue;
-pcb_qNode* nodePool[5];
+PCB PCBpool[5];
 uint32 progStacks[5][1024];
-
-
-
+int num_processes = 0;
+int num_pid = 0;
+int num_stack = 0;
 
 int main()
 {
@@ -250,7 +250,7 @@ void initIDT()
         if (i < 32)
             initIDTEntry(&idt[i], (uint32)&default_exception, 0x10, 0x8e);
         else if (i == 32)
-            initIDTEntry(&idt[i], 0, 0x10, 0x8e);
+            initIDTEntry(&idt[i], (uint32)&dispatch, 0x10, 0x8e);
         else if (i == 33)
             initIDTEntry(&idt[i], (uint32)&kbd_enter, 0x10, 0x8e);
         else    
@@ -258,6 +258,7 @@ void initIDT()
     }
 
     setupPIC();
+    init_timer_dev(50);
 
     limitStruct.limit = (sizeof(idt_entry) * 256) - 1;
     limitStruct.base = (uint32)&idt;
@@ -400,65 +401,76 @@ char k_getchar()
 
 //queue function prototypes
 //===========================================================================
-void pcb_queue_init(pcb_queue* queuePtr)
+void enqueue(PCB* PCBptr)
 {
-    queuePtr->count = 0;
-    queuePtr->front = NULL;
-    queuePtr->rear = NULL;
+    processQueue.pcb_queue[processQueue.tail];
+    processQueue.tail++;
+    if(processQueue.tail > 4)
+    {
+        processQueue.tail = 0;
+    }
+    processQueue.count++;
 }
-void qNode_enQueue(pcb_qNode* nodePtr, pcb_queue* queuePtr)
+PCB* dequeue()
 {
-    if(nodePtr == NULL)
+    PCB* tempProc = processQueue.pcb_queue[processQueue.head];
+    processQueue.head++;
+    if(processQueue.head > 4)
     {
-        println("!!ERROR: Attempt to push a null node.");
+        processQueue.head = 0;
     }
-    else if (queuePtr->front == NULL)
-    {
-        queuePtr->front = nodePtr;
-        queuePtr->rear = nodePtr;
-    }
-    else
-    {
-        queuePtr->rear->next = nodePtr;
-        queuePtr->rear = nodePtr;
-    }
+    processQueue.count--;
+    return tempProc;
 }
-void qNode_deQueue(pcb_qNode** nodePtr, pcb_queue* queuePtr)
-{
-    if (queuePtr->front == NULL)
-    {
-        println("!!ERROR: Attmept to remove node from an empty queue.");
-    }
-    else
-    {
-        *nodePtr = queuePtr->front;
-        queuePtr->front = (*nodePtr)->next;
-        if (queuePtr->front = NULL)
-        {
-            queuePtr->rear = NULL;
-        }
-    }
-}
-// void pcb_enQueue(PCB* pcbVal, pcb_queue* queuePtr)
-// {
-//     pcb_qNode* queueNode;
-//     queueNode->val = pcbVal;
-//     queueNode->next = NULL;
-//     qNode_enQueue(queueNode, queuePtr);
-// }
-// PCB* pcb_deQueue(pcb_queue* queuePtr)
-// {
-//     pcb_qNode* queueNode;
-//     qNode_deQueue;
-// }
 
 //PCB function prototypes
 //===========================================================================
 int create_process(uint32 processEntry)
 {
+    if (num_processes > 4 || num_stack > 4)
+        return 1; //error
+    
+    uint32* stackPtr = allocStack();
+    uint32 ss = 24, cs = 16, ds = 8, es = 8, fs = 8, gs = 8;
 
+    uint32* st = stackPtr+1024;
+    st--;
+    *st = (uint32)&go;
+    st--;
+    *st = 0x00000200;
+    st--;
+    *st = cs;
+    st--;
+    *st = processEntry;
+    for (i = 0; i < 8; i++)
+    {
+        st--;
+        *st = 0; 
+    }
+    st--;
+    *st = ds;
+    st--;
+    *st = es;
+    st--;
+    *st = fs;
+    st--;
+    *st = gs;
+
+    PCB* tempProcess = allocPCB();
+    tempProcess->ESP = st;
+    tempProcess->PID = num_pid;
+
+    enqueue(tempProcess);
+    num_processes++;
 }
-
+uint32* allocStack()
+{
+    return progStacks[num_stack++];
+}
+PCB* allocPCB()
+{
+    return &PCBpool[num_pid++];
+}
 
 //utility functions
 //===========================================================================
