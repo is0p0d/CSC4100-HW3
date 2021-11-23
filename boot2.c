@@ -14,7 +14,7 @@ typedef unsigned char   uint8;  //to set up an idt entry
 #define MAX_COL 80 //i dont like magic numbers
 #define MAX_ROW 24 //and global variables are yucky
 #define MAX_BUF 64
-#define MAX_QUE 5
+#define MAX_QUE 6
 
 
 //character sets
@@ -178,8 +178,8 @@ char charBuffer[MAX_BUF];
 
 queue processQueue;
 PCB* currentPCB;
-PCB PCBpool[6];
-uint32 progStacks[6][1024];
+PCB PCBpool[MAX_QUE];
+uint32 progStacks[MAX_QUE][1024];
 int process_count = 0;
 int num_pid = 0;
 int num_stack = 0;
@@ -200,6 +200,9 @@ int main()
     //asm volatile ("sti");
     println("!!Done...");
     println("==============================");
+    processQueue.count = 0;
+    processQueue.head = 0;
+    processQueue.tail = 0;
     int retval = create_process((uint32)&pIdle);
 
     retval = create_process((uint32)&p1);
@@ -423,9 +426,9 @@ char k_getchar()
 //===========================================================================
 void enqueue(PCB* PCBptr)
 {
-    processQueue.pcb_queue[processQueue.tail]=PCBptr;
+    processQueue.pcb_queue[processQueue.tail] = PCBptr;
     processQueue.tail++;
-    if(processQueue.tail > 4)
+    if(processQueue.tail >= MAX_QUE)
     {
         processQueue.tail = 0;
     }
@@ -435,7 +438,7 @@ PCB* dequeue()
 {
     PCB* tempProc = processQueue.pcb_queue[processQueue.head];
     processQueue.head++;
-    if(processQueue.head > 4)
+    if(processQueue.head >= MAX_QUE)
     {
         processQueue.head = 0;
     }
@@ -447,7 +450,7 @@ PCB* dequeue()
 //===========================================================================
 int create_process(uint32 processEntry)
 {
-    if (process_count > 4 || num_stack > 4)
+    if (process_count >= MAX_QUE || num_stack >= MAX_QUE)
         return 1; //error
     
     uint32* stackPtr = allocStack();
@@ -563,60 +566,74 @@ void splashScreen()
 void p1()
 {
     int i = 0;
-    char* procmsg;
+    char intBuf[3] = {'0'};
+    char* procmsg = NULL;
     while(1)
     {
-        procmsg = "process p1: " + i;
-        k_print(procmsg, 32, 20, 0);
+        procmsg = "process p1: ";
+        k_print(procmsg, 12, 19, 0);
+        convert_num(i, intBuf);
+        k_print(&intBuf, 3, 19, 13);
         i = ((i+1)%500);
     }
 }
 void p2()
 {
     int i = 0;
-    char* procmsg;
+    char intBuf[3] = {'0'};
+    char* procmsg = NULL;
     while(1)
     {
-        procmsg = "process p2: " + i;
-        k_print(procmsg, 32, 21, 0);
+        procmsg = "process p2: ";
+        k_print(procmsg, 12, 20, 0);
+        convert_num(i, intBuf);
+        k_print(&intBuf, 3, 20, 13);
         i = ((i+1)%500);
     }
 }
 void p3()
 {
     int i = 0;
-    char* procmsg;
+    char intBuf[3] = {'0'};
+    char* procmsg = NULL;
     while(1)
     {
-        procmsg = "process p3: " + i;
-        k_print(procmsg, 32, 22, 0);
+        procmsg = "process p3: ";
+        k_print(procmsg, 12, 21, 0);
+        convert_num(i, intBuf);
+        k_print(&intBuf, 3, 21, 13);
         i = ((i+1)%500);
     }
 }
 void p4()
 {
     int i = 0;
-    char* procmsg;
+    char intBuf[3] = {'0'};
+    char* procmsg = NULL;
     while(1)
     {
-        procmsg = "process p4: " + i;
-        k_print(procmsg, 32, 23, 0);
+        procmsg = "process p4: ";
+        k_print(procmsg, 12, 22, 0);
+        convert_num(i, intBuf);
+        k_print(&intBuf, 3, 22, 13);
         i = ((i+1)%500);
     }
 }
 void p5()
 {
     int i = 0;
-    char* procmsg;
+    char intBuf[3] = {'0'};
+    char* procmsg = NULL;
     while(1)
     {
-        procmsg = "process p5: " + i;
-        k_print(procmsg, 32, 24, 0);
+        procmsg = "process p5: ";
+        k_print(procmsg, 12, 23, 0);
+        convert_num(i, intBuf);
+        k_print(&intBuf, 3, 23, 13);
         i = ((i+1)%500);
     }
 }
 void pIdle()
 {
-    println("Idle");
     while(1);
 }
