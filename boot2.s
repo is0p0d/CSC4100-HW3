@@ -17,6 +17,8 @@
 .global dispatch
 .global dequeue
 .global enqueue
+
+.global currentPCB
 # .global lidtr
 # .global outportb
 # .global sti_enable
@@ -182,7 +184,8 @@ init_timer_dev:
 
 go:
     call dequeue
-    mov esp, eax
+    mov [currentPCB], eax
+    mov esp, [eax]
     pop gs
     pop fs 
     pop es 
@@ -196,11 +199,13 @@ dispatch:
     push es 
     push fs 
     push gs
-    mov edi, esp 
+    mov [edi], esp
+    push edi 
     call enqueue
 
     call dequeue
-    mov esp, eax
+    mov [currentPCB], eax
+    mov esp, [eax]
     pop gs
     pop fs 
     pop es 

@@ -178,8 +178,8 @@ char charBuffer[MAX_BUF];
 
 queue processQueue;
 PCB* currentPCB;
-PCB PCBpool[5];
-uint32 progStacks[5][1024];
+PCB PCBpool[6];
+uint32 progStacks[6][1024];
 int process_count = 0;
 int num_pid = 0;
 int num_stack = 0;
@@ -200,12 +200,13 @@ int main()
     //asm volatile ("sti");
     println("!!Done...");
     println("==============================");
-    int retval = 0;
+    int retval = create_process((uint32)&pIdle);
+
     retval = create_process((uint32)&p1);
-    retval = create_process((uint32)&p1);
-    retval = create_process((uint32)&p1);
-    retval = create_process((uint32)&p1);
-    retval = create_process((uint32)&p1);
+    retval = create_process((uint32)&p2);
+    retval = create_process((uint32)&p3);
+    retval = create_process((uint32)&p4);
+    retval = create_process((uint32)&p5);
 
     go();
     
@@ -616,5 +617,6 @@ void p5()
 }
 void pIdle()
 {
+    println("Idle");
     while(1);
 }
