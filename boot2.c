@@ -423,7 +423,7 @@ char k_getchar()
 //===========================================================================
 void enqueue(PCB* PCBptr)
 {
-    processQueue.pcb_queue[processQueue.tail];
+    processQueue.pcb_queue[processQueue.tail]=PCBptr;
     processQueue.tail++;
     if(processQueue.tail > 4)
     {

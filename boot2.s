@@ -199,6 +199,7 @@ dispatch:
     push es 
     push fs 
     push gs
+    mov edi, [currentPCB]
     mov [edi], esp
     push edi 
     call enqueue
